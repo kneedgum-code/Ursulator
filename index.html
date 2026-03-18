@@ -187,7 +187,6 @@
         }
         .btn-ink-circle:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.3); }
 
-        /* Centered Nav Island */
         .nav-container {
             display: flex;
             justify-content: center;
@@ -261,7 +260,6 @@
 
 <div class="calc-case" id="calc-body">
     <div class="lcd-container">
-        <!-- LCD Display -->
         <div class="lcd">
             <div class="status-bar">
                 <div><span id="shift-ind" class="hidden bg-black text-white px-1">S</span> <span id="mode-ind">DEG</span></div>
@@ -271,7 +269,6 @@
             <div class="math-line" id="input-area">0<span class="cursor"></span></div>
             <div class="mt-auto result-area" id="output-area"></div>
             
-            <!-- Menu Interface -->
             <div id="menu-overlay" class="menu-overlay">
                 <div class="menu-title">ANGLE UNIT</div>
                 <div class="menu-item" id="mi-deg" onclick="setAngleUnit('DEG')">1: Degree</div>
@@ -282,9 +279,7 @@
         </div>
     </div>
 
-    <!-- Navigatie rij -->
     <div class="grid grid-cols-3 items-center mb-6 px-2">
-        <!-- Linker knoppen -->
         <div class="flex flex-col gap-3 justify-end h-[110px]">
             <div class="key-unit items-start">
                 <button class="btn-shift" onclick="press('SHIFT')">SHIFT</button>
@@ -294,7 +289,6 @@
             </div>
         </div>
 
-        <!-- Gecentreerd Navigatie eiland -->
         <div class="nav-container">
             <div class="nav-island">
                 <div></div><div class="nav-arrow" onclick="press('UP')">▲</div><div></div>
@@ -305,7 +299,6 @@
             </div>
         </div>
 
-        <!-- Rechter blok: Ursula Branding & INK knop -->
         <div class="flex flex-col justify-center items-end h-[110px]">
             <div class="branding-block">
                 <div class="ursula-row">
@@ -323,7 +316,6 @@
         </div>
     </div>
 
-    <!-- Functie toetsen rij 1 -->
     <div class="key-row-6">
         <div class="key-unit"><span class="shift-label">QR</span><button class="btn-circle btn-func" onclick="press('x')">x</button></div>
         <div class="key-unit"><span class="shift-label">■■/□</span><button class="btn-circle btn-func" onclick="press('frac')">■/□</button></div>
@@ -333,7 +325,6 @@
         <div class="key-unit"><span class="shift-label">logₐ■</span><button class="btn-circle btn-func" onclick="press('log')">log</button></div>
     </div>
 
-    <!-- Functie toetsen rij 2 -->
     <div class="key-row-6">
         <div class="key-unit"><span class="shift-label"></span><button class="btn-circle btn-func" onclick="press('Ans')">Ans</button></div>
         <div class="key-unit"><span class="shift-label">sin⁻¹</span><button class="btn-circle btn-func" onclick="press('sin')">sin</button></div>
@@ -343,7 +334,6 @@
         <div class="key-unit"><span class="shift-label">;</span><button class="btn-circle btn-func" onclick="press(')')">)</button></div>
     </div>
 
-    <!-- Numpad en Operaties -->
     <div class="grid grid-cols-5 gap-3 mt-4">
         <div class="col-span-3 numpad-grid">
             <div class="key-unit">
@@ -679,7 +669,10 @@
             case ')': addToken(';', active); break;
             case '7': addToken('π', active); break;
             case '-': addToken('-', active); break;
-            case '+': addToken('°', active); break; 
+            case '+': addToken('°', active); break;
+            case 'sin': addToken('sin⁻¹(', active); break;
+            case 'cos': addToken('cos⁻¹(', active); break;
+            case 'tan': addToken('tan⁻¹(', active); break;
         }
     }
 
@@ -721,11 +714,34 @@
                 for(let i=0; i < list.length; i++){
                     let t = list[i];
                     if(t.type === 'text') {
-                        let v = t.val.replace(/×/g,'*').replace(/÷/g,'/').replace(/sin\(/g,'calcSin(').replace(/cos\(/g,'calcCos(').replace(/tan\(/g,'calcTan(').replace(/√\(/g,'Math.sqrt(').replace(/²/g,'**2').replace(/³/g,'**3').replace(/π/g,'Math.PI').replace(/;/g, ',').replace(/°/g, '');
-                        if ((v === "Math.PI" || v === "lastAnsNum" || t.val === "Ans") && i > 0) {
+                        let v = t.val;
+                        
+                        // Impliciete vermenigvuldiging detectie
+                        if (i > 0) {
                             let prev = list[i-1];
-                            if (prev.type === 'text' && !isNaN(prev.val)) resultStrings.push('*');
+                            let prevVal = prev.type === 'text' ? prev.val : '';
+                            if (
+                                (v.startsWith('sin') || v.startsWith('cos') || v.startsWith('tan') || v.startsWith('log') || v.startsWith('√') || v === 'π' || v === 'Ans' || v === '(') &&
+                                (prev.type !== 'text' || (!isNaN(prevVal) || prevVal === ')' || prevVal === 'π' || prevVal === 'Ans' || prevVal === '²' || prevVal === '³'))
+                            ) {
+                                resultStrings.push('*');
+                            }
                         }
+
+                        // Belangrijk: sin⁻¹ eerst vervangen vòòr sin om over-replacing te voorkomen
+                        // We vervangen eerst naar de aangepaste interne functies.
+                        v = v.replace(/sin⁻¹\(/g, 'calcAsin(')
+                             .replace(/cos⁻¹\(/g, 'calcAcos(')
+                             .replace(/tan⁻¹\(/g, 'calcAtan(')
+                             .replace(/sin\(/g,'calcSin(')
+                             .replace(/cos\(/g,'calcCos(')
+                             .replace(/tan\(/g,'calcTan(')
+                             .replace(/×/g,'*').replace(/÷/g,'/')
+                             .replace(/√\(/g,'Math.sqrt(')
+                             .replace(/²/g,'**2').replace(/³/g,'**3')
+                             .replace(/π/g,'Math.PI')
+                             .replace(/°/g, '');
+                        
                         resultStrings.push(t.val === "Ans" ? lastAnsNum : v);
                     } else if(t.type === 'pow') {
                         if (t.isSci) resultStrings.push(`* Math.pow(10, ${evalList(t.exp) || "0"})`);
@@ -747,13 +763,29 @@
                 if(angleUnit === 'GRAD') return val * (Math.PI / 200);
                 return val;
             };
+            const fromRad = (rad) => {
+                if(angleUnit === 'DEG') return rad * (180 / Math.PI);
+                if(angleUnit === 'GRAD') return rad * (200 / Math.PI);
+                return rad;
+            };
+
+            // Globale wrappers voor goniometrie
             window.calcSin = (x) => Math.sin(toRad(x));
             window.calcCos = (x) => Math.cos(toRad(x));
             window.calcTan = (x) => Math.tan(toRad(x));
+            
+            // Inverse functies: berekenen in radialen en direct converteren naar gekozen eenheid (DEG/RAD/GRAD)
+            window.calcAsin = (x) => fromRad(Math.asin(x));
+            window.calcAcos = (x) => fromRad(Math.acos(x));
+            window.calcAtan = (x) => fromRad(Math.atan(x));
 
             let code = evalList(tokens);
-            if (code.startsWith('*')) code = '1' + code;
+            // Vervang de ; door / zodat sin⁻¹(50;120) werkt als sin⁻¹(50/120)
+            code = code.replace(/;/g, '/');
+            
+            if (code.trim().startsWith('*') || code.trim().startsWith('/')) code = '1' + code;
             if(!code || /^[\+\-\*\/\s,]+$/.test(code)) code = "0";
+            
             let res = eval(code);
             
             history.push({ tokens: cloneTokens(tokens), result: res });
@@ -765,6 +797,7 @@
             showExactMode = true;
             renderResult(res);
         } catch(e) { 
+            console.error("Berekeningsfout:", e);
             renderResult("Fout"); 
             lastAnsNum = null; 
             isResultShowing = true;
