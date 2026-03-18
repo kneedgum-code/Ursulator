@@ -395,7 +395,7 @@
     let tokens = [];
     let isShift = false;
     let lastAnsNum = 0;
-    let showExactMode = true; // Standaard exacte modus aan
+    let showExactMode = true; 
     let isResultShowing = false;
     let isMenuOpen = false;
     let angleUnit = 'DEG';
@@ -466,7 +466,6 @@
         
         const frac = toFraction(value);
         
-        // Als we in Exacte modus zijn en er is een breuk (d != 1)
         if (showExactMode && frac && frac.d !== 1) {
             const c = document.createElement('div'); c.className = 'frac-container';
             const n = document.createElement('div'); n.className = 'frac-part'; n.innerText = frac.n;
@@ -475,7 +474,6 @@
             c.appendChild(n); c.appendChild(l); c.appendChild(d);
             outputArea.appendChild(c);
         } else {
-            // Decimale weergave
             const span = document.createElement('span');
             span.className = 'text-3xl font-bold';
             let displayVal = Number.isInteger(value) ? value.toString() : value.toFixed(9).replace(/\.?0+$/, "");
@@ -570,8 +568,6 @@
 
         const active = getActive(tokens);
 
-        // NIEUW: Als er een resultaat staat en we drukken op een nieuwe knop (behalve SHIFT of FORMAT of EXE)
-        // Dan wissen we de regel voor een schone start.
         if (isResultShowing && !isShift && key !== 'FORMAT' && key !== 'EXE') {
             if (['+', '-', '*', '/', 'pow', 'sq', 'exp'].includes(key)) {
                 tokens = [{ type: 'text', val: 'Ans' }];
@@ -649,7 +645,6 @@
                 } break;
             case 'EXE': calculate(); break;
             case 'FORMAT': 
-                // Wisselt tussen exact en decimaal
                 showExactMode = !showExactMode; 
                 if(isResultShowing || lastAnsNum !== null) renderResult(lastAnsNum); 
                 break;
@@ -684,7 +679,7 @@
         switch(key) {
             case 'frac': if(!active) tokens.push({type:'frac', whole:[], num:[], den:[], focus:'whole', isMixed: true}); break;
             case 'pow': if(!active) tokens.push({type:'nthroot', idx:[], cnt:[], focus:'idx'}); break;
-            case 'sqrt': addToken('³√(', active); break;
+            case 'sqrt': addToken('³√( ', active); break; // Spatie toegevoegd om parsing te verbeteren
             case 'sq': addToken('³', active); break;
             case ')': addToken(';', active); break;
             case '7': addToken('π', active); break;
@@ -734,12 +729,10 @@
         if(tokens.length === 0) return;
         try {
             let mathStr = tokensToMath(tokens);
-            // Vervang impliciete vermenigvuldiging (e.g., 2(3) of (2)(3))
             mathStr = mathStr.replace(/(\d|\))(\()/g, '$1*$2');
             let result = eval(mathStr);
             lastAnsNum = result;
             
-            // Altijd eerst de exacte modus tonen na EXE
             showExactMode = true; 
             renderResult(result);
             
@@ -760,7 +753,9 @@
                 v = v.replace(/×/g,'*').replace(/÷/g,'/').replace('Ans', lastAnsNum).replace('π', 'Math.PI');
                 v = v.replace('sin⁻¹(', 'asin_deg(').replace('cos⁻¹(', 'acos_deg(').replace('tan⁻¹(', 'atan_deg(');
                 v = v.replace('sin(', 'sin_deg(').replace('cos(', 'cos_deg(').replace('tan(', 'tan_deg(');
-                v = v.replace('√(', 'Math.sqrt(').replace('³√(', 'Math.cbrt(').replace('²', '**2').replace('³', '**3');
+                // Herstelde logica voor derdemachtswortel
+                v = v.replace('³√(', 'Math.cbrt(');
+                v = v.replace('√(', 'Math.sqrt(').replace('²', '**2').replace('³', '**3');
                 v = v.replace('log(', 'Math.log10(');
                 s += v;
             } else if(t.type === 'pow') {
@@ -777,7 +772,6 @@
         return s;
     }
 
-    // Trigonometrische Helpers
     function toRad(val) {
         if(angleUnit === 'RAD') return val;
         if(angleUnit === 'GRAD') return val * (Math.PI / 200);
