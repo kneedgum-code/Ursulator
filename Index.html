@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Casio fx-82NL Professional - Ursula Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        :root {
+            --ink-main: #003366;
+            --ink-dark: #001a33;
+            --casio-gold: #ffcc00;
+            --lcd-bg: #9eb599;
+            --lcd-text: #1a1f1a;
+            --btn-gray: #4b5563;
+            --btn-light: #f3f4f6;
+            --btn-accent: #374151;
+            --ursula-blue: #323b8c;
+            --ursula-gold: #f5b335;
+        }
+
+        body {
+            background-color: #d1d5db;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            touch-action: manipulation;
+        }
+
+        .calc-case {
+            background-color: var(--ink-main);
+            width: 100%;
+            max-width: 420px;
+            padding: 24px;
+            border-radius: 30px 30px 60px 60px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+            border: 3px solid rgba(0,0,0,0.2);
+            transition: background-color 0.5s ease;
+        }
+
+        .lcd-container {
+            background-color: #000;
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .lcd {
+            background-color: var(--lcd-bg);
+            height: 140px;
+            border-radius: 3px;
+            padding: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--lcd-text);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Menu Overlay */
+        .menu-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--lcd-bg);
+            z-index: 10;
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+        }
+        .menu-title { font-weight: bold; border-bottom: 1px solid var(--lcd-text); margin-bottom: 5px; }
+        .menu-item { cursor: pointer; padding: 2px 5px; }
+        .menu-item.selected { background: var(--lcd-text); color: var(--lcd-bg); }
+
+        .math-line {
+            font-size: 20px;
+            line-height: 1.4;
+            min-height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        /* Math Elements */
+        .frac-container { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; padding: 0 4px; }
+        .frac-line { width: 100%; height: 2px; background: var(--lcd-text); margin: 1px 0; }
+        .frac-part { min-width: 14px; text-align: center; font-size: 18px; }
+        .mixed-frac { display: inline-flex; align-items: center; vertical-align: middle; gap: 2px; }
+        .mixed-whole { font-weight: bold; padding-right: 2px; font-size: 18px; }
+        .pow-wrapper { display: inline-flex; align-items: flex-start; }
+        .exponent { font-size: 13px; margin-top: -8px; min-width: 8px; }
+        
+        .nth-root-wrapper { display: inline-flex; align-items: flex-end; vertical-align: middle; margin: 0 2px; }
+        .root-index { font-size: 11px; margin-bottom: 10px; margin-right: -2px; min-width: 10px; text-align: center; }
+        .root-symbol { font-size: 22px; margin-right: -1px; }
+        .root-content { border-top: 1.5px solid var(--lcd-text); padding-top: 1px; padding-left: 2px; min-width: 14px; }
+
+        .active-box { background: rgba(0,0,0,0.15); border-radius: 2px; min-width: 10px; min-height: 20px; }
+
+        .cursor {
+            width: 2px;
+            height: 1.1em;
+            background: var(--lcd-text);
+            display: inline-block;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .key-row-6 { 
+            display: grid; 
+            grid-template-columns: repeat(6, 1fr); 
+            gap: 6px; 
+            margin-bottom: 12px;
+            align-items: end; 
+        }
+        
+        .key-unit { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 100%;
+            justify-content: flex-end;
+        }
+        
+        .shift-label { 
+            font-size: 10px;
+            color: var(--casio-gold); 
+            font-weight: 800; 
+            height: 14px; 
+            margin-bottom: 3px; 
+            text-align: center; 
+            width: 100%; 
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.4);
+            transition: all 0.05s;
+            border: none;
+            font-weight: 700;
+        }
+        .btn-circle:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.4); }
+
+        .btn-func { background-color: var(--btn-gray); color: white; font-size: 13px; width: 44px; height: 34px; border-radius: 17px; }
+        .btn-num { background-color: var(--btn-light); color: black; font-size: 20px; }
+        .btn-op { background-color: var(--btn-light); color: black; font-size: 20px; }
+        .btn-del { background-color: #4b5563; color: white; font-size: 14px; }
+        .btn-ac { background-color: #dc2626; color: white; font-size: 14px; }
+        .btn-exe { background-color: #1f2937; color: white; font-size: 16px; }
+        .btn-form { background-color: var(--btn-gray); color: white; font-size: 12px; }
+
+        .btn-shift { background-color: var(--casio-gold); color: black; border-radius: 12px; width: 55px; height: 34px; font-size: 13px; font-weight: 900; box-shadow: 0 3px 0 rgba(0,0,0,0.3); }
+        .btn-home { background-color: #222; color: white; border-radius: 12px; width: 55px; height: 34px; font-size: 11px; font-weight: bold; box-shadow: 0 3px 0 rgba(0,0,0,0.3); text-transform: uppercase; }
+        
+        .btn-ink-circle { 
+            background-color: white; 
+            border: 2px solid #d1d5db; 
+            border-radius: 50%; 
+            width: 34px; 
+            height: 34px; 
+            font-size: 10px; 
+            color: black; 
+            box-shadow: 0 3px 0 rgba(0,0,0,0.3); 
+            font-weight: bold;
+        }
+        .btn-ink-circle:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.3); }
+
+        /* Centered Nav Island */
+        .nav-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .nav-island {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 110px;
+            height: 110px;
+            background: #222;
+            border-radius: 50%;
+            padding: 6px;
+            position: relative;
+        }
+        .nav-arrow { display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; font-size: 16px; width: 100%; height: 100%; }
+        .nav-ok { background: white; color: black; border-radius: 50%; width: 36px; height: 36px; font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        .status-bar { font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .result-area { display: flex; justify-content: flex-end; align-items: center; gap: 4px; min-height: 44px; padding-right: 5px; }
+        .history-ind { font-size: 10px; color: var(--lcd-text); opacity: 0.6; position: absolute; top: 24px; right: 10px; }
+
+        .numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            place-items: center;
+        }
+        .ops-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            place-items: center;
+        }
+
+        .branding-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .ursula-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .ursula-logo {
+            width: 44px;
+            height: 44px;
+        }
+        .ursula-text {
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            text-align: center;
+            background: transparent;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calc-case" id="calc-body">
+    <div class="lcd-container">
+        <!-- LCD Display -->
+        <div class="lcd">
+            <div class="status-bar">
+                <div><span id="shift-ind" class="hidden bg-black text-white px-1">S</span> <span id="mode-ind">DEG</span></div>
+                <div id="ink-name">Imperial Blue</div>
+            </div>
+            <div id="history-marker" class="history-ind"></div>
+            <div class="math-line" id="input-area">0<span class="cursor"></span></div>
+            <div class="mt-auto result-area" id="output-area"></div>
+            
+            <!-- Menu Interface -->
+            <div id="menu-overlay" class="menu-overlay">
+                <div class="menu-title">ANGLE UNIT</div>
+                <div class="menu-item" id="mi-deg" onclick="setAngleUnit('DEG')">1: Degree</div>
+                <div class="menu-item" id="mi-rad" onclick="setAngleUnit('RAD')">2: Radian</div>
+                <div class="menu-item" id="mi-grad" onclick="setAngleUnit('GRAD')">3: Gradian</div>
+                <div class="text-[9px] mt-auto text-center opacity-70">Druk op een pijl of cijfer</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigatie rij -->
+    <div class="grid grid-cols-3 items-center mb-6 px-2">
+        <!-- Linker knoppen -->
+        <div class="flex flex-col gap-3 justify-end h-[110px]">
+            <div class="key-unit items-start">
+                <button class="btn-shift" onclick="press('SHIFT')">SHIFT</button>
+            </div>
+            <div class="key-unit items-start">
+                <button class="btn-home" onclick="press('HOME')">MENU</button>
+            </div>
+        </div>
+
+        <!-- Gecentreerd Navigatie eiland -->
+        <div class="nav-container">
+            <div class="nav-island">
+                <div></div><div class="nav-arrow" onclick="press('UP')">▲</div><div></div>
+                <div class="nav-arrow" onclick="press('LEFT')">◀</div>
+                <div class="flex items-center justify-center"><div class="nav-ok" onclick="press('EXE')">OK</div></div>
+                <div class="nav-arrow" onclick="press('RIGHT')">▶</div>
+                <div></div><div class="nav-arrow" onclick="press('DOWN')">▼</div><div></div>
+            </div>
+        </div>
+
+        <!-- Rechter blok: Ursula Branding & INK knop -->
+        <div class="flex flex-col justify-center items-end h-[110px]">
+            <div class="branding-block">
+                <div class="ursula-row">
+                    <svg class="ursula-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 5 L89 27.5 L89 72.5 L50 95 L11 72.5 L11 27.5 Z" fill="none" stroke="white" stroke-width="4" stroke-linejoin="round" />
+                        <path d="M50 5 L89 27.5 L89 72.5" fill="none" stroke="#323b8c" stroke-width="6" stroke-linecap="round" />
+                        <path d="M89 72.5 L50 95 L11 72.5 L11 27.5 L50 5" fill="none" stroke="#f5b335" stroke-width="6" stroke-linecap="round" />
+                        <text x="35" y="55" font-family="Arial Black, sans-serif" font-size="38" fill="#f5b335" text-anchor="middle" style="font-weight:900">S</text>
+                        <text x="60" y="65" font-family="Arial Black, sans-serif" font-size="38" fill="#323b8c" text-anchor="middle" style="font-weight:900; opacity: 0.95">U</text>
+                    </svg>
+                    <button class="btn-ink-circle" onclick="nextInk()">INK</button>
+                </div>
+                <span class="ursula-text">Ursula Edition</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Functie toetsen rij 1 -->
+    <div class="key-row-6">
+        <div class="key-unit"><span class="shift-label">QR</span><button class="btn-circle btn-func" onclick="press('x')">x</button></div>
+        <div class="key-unit"><span class="shift-label">■■/□</span><button class="btn-circle btn-func" onclick="press('frac')">■/□</button></div>
+        <div class="key-unit"><span class="shift-label">³√</span><button class="btn-circle btn-func" onclick="press('sqrt')">√</button></div>
+        <div class="key-unit"><span class="shift-label">x³</span><button class="btn-circle btn-func" onclick="press('sq')">x²</button></div>
+        <div class="key-unit"><span class="shift-label">ⁿ√</span><button class="btn-circle btn-func" onclick="press('pow')">xⁿ</button></div>
+        <div class="key-unit"><span class="shift-label">logₐ■</span><button class="btn-circle btn-func" onclick="press('log')">log</button></div>
+    </div>
+
+    <!-- Functie toetsen rij 2 -->
+    <div class="key-row-6">
+        <div class="key-unit"><span class="shift-label"></span><button class="btn-circle btn-func" onclick="press('Ans')">Ans</button></div>
+        <div class="key-unit"><span class="shift-label">sin⁻¹</span><button class="btn-circle btn-func" onclick="press('sin')">sin</button></div>
+        <div class="key-unit"><span class="shift-label">cos⁻¹</span><button class="btn-circle btn-func" onclick="press('cos')">cos</button></div>
+        <div class="key-unit"><span class="shift-label">tan⁻¹</span><button class="btn-circle btn-func" onclick="press('tan')">tan</button></div>
+        <div class="key-unit"><span class="shift-label"></span><button class="btn-circle btn-func" onclick="press('(')">(</button></div>
+        <div class="key-unit"><span class="shift-label">;</span><button class="btn-circle btn-func" onclick="press(')')">)</button></div>
+    </div>
+
+    <!-- Numpad en Operaties -->
+    <div class="grid grid-cols-5 gap-3 mt-4">
+        <div class="col-span-3 numpad-grid">
+            <div class="key-unit">
+                <span class="shift-label">π</span>
+                <button class="btn-circle btn-num" onclick="press('7')">7</button>
+            </div>
+            <div class="key-unit">
+                <span class="shift-label"></span>
+                <button class="btn-circle btn-num" onclick="press('8')">8</button>
+            </div>
+            <div class="key-unit">
+                <span class="shift-label"></span>
+                <button class="btn-circle btn-num" onclick="press('9')">9</button>
+            </div>
+            <button class="btn-circle btn-num" onclick="press('4')">4</button>
+            <button class="btn-circle btn-num" onclick="press('5')">5</button>
+            <button class="btn-circle btn-num" onclick="press('6')">6</button>
+            <button class="btn-circle btn-num" onclick="press('1')">1</button>
+            <button class="btn-circle btn-num" onclick="press('2')">2</button>
+            <button class="btn-circle btn-num" onclick="press('3')">3</button>
+            <button class="btn-circle btn-num" onclick="press('0')">0</button>
+            <button class="btn-circle btn-num" onclick="press('.')">,</button>
+            <button class="btn-circle btn-num text-[12px]" onclick="press('exp')">x10ⁿ</button>
+        </div>
+        <div class="col-span-2 ops-grid">
+            <div class="key-unit">
+                <span class="shift-label"></span>
+                <button class="btn-circle btn-del" onclick="press('DEL')">DEL</button>
+            </div>
+            <div class="key-unit">
+                <span class="shift-label"></span>
+                <button class="btn-circle btn-ac" onclick="press('AC')">AC</button>
+            </div>
+            <button class="btn-circle btn-op" onclick="press('*')">×</button>
+            <button class="btn-circle btn-op" onclick="press('/')">÷</button>
+            <div class="key-unit">
+                <span class="shift-label">° ' ''</span>
+                <button class="btn-circle btn-op" onclick="press('+')">+</button>
+            </div>
+            <div class="key-unit">
+                <span class="shift-label">(-)</span>
+                <button class="btn-circle btn-op" onclick="press('-')">−</button>
+            </div>
+            <button class="btn-circle btn-form" onclick="press('FORMAT')">FORM</button>
+            <button class="btn-circle btn-exe" onclick="press('EXE')">EXE</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const inks = [
+        { name: "Imperial Blue", main: "#003366" },
+        { name: "Aqua Lagoon", main: "#008a96" },
+        { name: "Writer's Blood", main: "#4a0404" },
+        { name: "Sherwood Green", main: "#004225" },
+        { name: "Monboddo's Hat", main: "#3b2b4d" },
+        { name: "Ancient Copper", main: "#8b4513" },
+        { name: "Hope Pink", main: "#ff2e8c" }
+    ];
+    let inkIdx = 0;
+    let tokens = [];
+    let isShift = false;
+    let lastAnsNum = 0;
+    let showExactMode = true;
+    let isResultShowing = false;
+    let isMenuOpen = false;
+    let angleUnit = 'DEG';
+
+    let history = []; 
+    let historyIndex = -1; 
+
+    const inputArea = document.getElementById('input-area');
+    const outputArea = document.getElementById('output-area');
+    const historyMarker = document.getElementById('history-marker');
+    const menuOverlay = document.getElementById('menu-overlay');
+    const modeInd = document.getElementById('mode-ind');
+
+    function nextInk() {
+        inkIdx = (inkIdx + 1) % inks.length;
+        document.getElementById('calc-body').style.backgroundColor = inks[inkIdx].main;
+        document.getElementById('ink-name').innerText = inks[inkIdx].name;
+    }
+
+    function setAngleUnit(unit) {
+        angleUnit = unit;
+        modeInd.innerText = unit;
+        closeMenu();
+        render();
+    }
+
+    function openMenu() {
+        isMenuOpen = true;
+        menuOverlay.style.display = 'flex';
+        updateMenuSelection();
+    }
+
+    function closeMenu() {
+        isMenuOpen = false;
+        menuOverlay.style.display = 'none';
+    }
+
+    function updateMenuSelection() {
+        document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('selected'));
+        if(angleUnit === 'DEG') document.getElementById('mi-deg').classList.add('selected');
+        if(angleUnit === 'RAD') document.getElementById('mi-rad').classList.add('selected');
+        if(angleUnit === 'GRAD') document.getElementById('mi-grad').classList.add('selected');
+    }
+
+    function gcd(a, b) { return b ? gcd(b, a % b) : a; }
+
+    function toFraction(decimal) {
+        if (Math.abs(decimal) < 1e-12) return { n: 0, d: 1 };
+        if (!isFinite(decimal)) return null;
+        let sign = decimal < 0 ? -1 : 1;
+        decimal = Math.abs(decimal);
+        let best_n = Math.round(decimal), best_d = 1, min_err = Math.abs(decimal - best_n);
+        for (let d = 2; d <= 10000; d++) {
+            let n = Math.round(decimal * d);
+            let err = Math.abs(decimal - n / d);
+            if (err < min_err) { best_n = n; best_d = d; min_err = err; }
+            if (err < 1e-12) break;
+        }
+        if (min_err > 1e-9) return null;
+        let common = gcd(best_n, best_d);
+        return { n: sign * (best_n / common), d: best_d / common };
+    }
+
+    function renderResult(value) {
+        outputArea.innerHTML = '';
+        if (value === null || typeof value === 'undefined') return;
+        if (typeof value === 'string') { outputArea.innerText = value; return; }
+        const frac = toFraction(value);
+        if (showExactMode && frac && frac.d !== 1) {
+            const c = document.createElement('div'); c.className = 'frac-container';
+            const n = document.createElement('div'); n.className = 'frac-part'; n.innerText = frac.n;
+            const l = document.createElement('div'); l.className = 'frac-line';
+            const d = document.createElement('div'); d.className = 'frac-part'; d.innerText = frac.d;
+            c.appendChild(n); c.appendChild(l); c.appendChild(d);
+            outputArea.appendChild(c);
+        } else {
+            const span = document.createElement('span');
+            span.className = 'text-3xl font-bold';
+            let displayVal = Number.isInteger(value) ? value.toString() : value.toFixed(9).replace(/\.?0+$/, "");
+            span.innerText = displayVal.replace('.', ',');
+            outputArea.appendChild(span);
+        }
+    }
+
+    function render() {
+        inputArea.innerHTML = tokens.length === 0 ? '0<span class="cursor"></span>' : '';
+        renderList(tokens, inputArea);
+        if (tokens.length > 0 && !hasActive(tokens)) inputArea.innerHTML += '<span class="cursor"></span>';
+        document.getElementById('shift-ind').classList.toggle('hidden', !isShift);
+        
+        if (historyIndex === -1) {
+            historyMarker.innerText = "";
+        } else {
+            historyMarker.innerText = `▲▼ Hist ${history.length - historyIndex}/${history.length}`;
+        }
+    }
+
+    function renderList(list, container) {
+        list.forEach(t => {
+            if (t.type === 'text') {
+                const s = document.createElement('span');
+                s.innerText = t.val.replace('.', ',');
+                container.appendChild(s);
+            } else if (t.type === 'pow') {
+                const w = document.createElement('div'); w.className = 'pow-wrapper';
+                const b = document.createElement('span'); 
+                if (t.isSci) { b.innerText = "×10"; } else { renderList(t.base, b); }
+                const e = document.createElement('div'); e.className = 'exponent' + (t.focus === 'exp'?' active-box':'');
+                renderList(t.exp, e); if(t.focus === 'exp') e.innerHTML += '<span class="cursor"></span>';
+                w.appendChild(b); w.appendChild(e); container.appendChild(w);
+            } else if (t.type === 'frac') {
+                const wrapper = t.isMixed ? document.createElement('div') : container;
+                if(t.isMixed) {
+                    wrapper.className = 'mixed-frac';
+                    const whole = document.createElement('div'); whole.className = 'mixed-whole' + (t.focus === 'whole'?' active-box':'');
+                    renderList(t.whole, whole); if(t.focus === 'whole') whole.innerHTML += '<span class="cursor"></span>';
+                    wrapper.appendChild(whole);
+                }
+                const c = document.createElement('div'); c.className = 'frac-container';
+                const n = document.createElement('div'); n.className = 'frac-part' + (t.focus === 'num'?' active-box':'');
+                renderList(t.num, n); if(t.focus === 'num') n.innerHTML += '<span class="cursor"></span>';
+                const l = document.createElement('div'); l.className = 'frac-line';
+                const d = document.createElement('div'); d.className = 'frac-part' + (t.focus === 'den'?' active-box':'');
+                renderList(t.den, d); if(t.focus === 'den') d.innerHTML += '<span class="cursor"></span>';
+                c.appendChild(n); c.appendChild(l); c.appendChild(d);
+                if(t.isMixed) { wrapper.appendChild(c); container.appendChild(wrapper); } else container.appendChild(c);
+            } else if (t.type === 'nthroot') {
+                const w = document.createElement('div'); w.className = 'nth-root-wrapper';
+                const idx = document.createElement('div'); idx.className = 'root-index' + (t.focus === 'idx'?' active-box':'');
+                renderList(t.idx, idx); if(t.focus === 'idx') idx.innerHTML += '<span class="cursor"></span>';
+                const sym = document.createElement('div'); sym.className = 'root-symbol'; sym.innerText = '√';
+                const cnt = document.createElement('div'); cnt.className = 'root-content' + (t.focus === 'cnt'?' active-box':'');
+                renderList(t.cnt, cnt); if(t.focus === 'cnt') cnt.innerHTML += '<span class="cursor"></span>';
+                w.appendChild(idx); w.appendChild(sym); w.appendChild(cnt); container.appendChild(w);
+            }
+        });
+    }
+
+    function hasActive(list) {
+        return list.some(t => (t.focus && t.focus !== 'none') || 
+            (t.type === 'pow' && hasActive(t.exp)) ||
+            (t.type === 'frac' && (hasActive(t.whole||[]) || hasActive(t.num) || hasActive(t.den))) ||
+            (t.type === 'nthroot' && (hasActive(t.idx) || hasActive(t.cnt))));
+    }
+
+    function getActive(list) {
+        for(let t of list) {
+            if(t.focus && t.focus !== 'none') return t;
+            if(t.type === 'pow') { let r = getActive(t.exp); if(r) return r; }
+            if(t.type === 'frac') { let r = (t.isMixed ? getActive(t.whole) : null) || getActive(t.num) || getActive(t.den); if(r) return r; }
+            if(t.type === 'nthroot') { let r = getActive(t.idx) || getActive(t.cnt); if(r) return r; }
+        }
+        return null;
+    }
+
+    function cloneTokens(tks) {
+        return JSON.parse(JSON.stringify(tks));
+    }
+
+    function press(key) {
+        if (isMenuOpen) {
+            if(key === '1') setAngleUnit('DEG');
+            else if(key === '2') setAngleUnit('RAD');
+            else if(key === '3') setAngleUnit('GRAD');
+            else if(key === 'AC' || key === 'HOME') closeMenu();
+            return;
+        }
+
+        const active = getActive(tokens);
+
+        if (isResultShowing && !isShift) {
+            if (['+', '-', '*', '/', 'pow', 'sq', 'exp'].includes(key)) {
+                tokens = [{ type: 'text', val: 'Ans' }];
+                outputArea.innerHTML = '';
+            } else if (!['SHIFT', 'FORMAT', 'EXE', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'HOME'].includes(key)) {
+                tokens = [];
+                outputArea.innerHTML = '';
+            }
+            isResultShowing = false;
+        }
+
+        if (isShift) { handleShift(key, active); isShift = false; render(); return; }
+
+        switch(key) {
+            case 'AC': 
+                tokens = []; 
+                outputArea.innerHTML = ''; 
+                lastAnsNum = 0; 
+                isResultShowing = false; 
+                historyIndex = -1;
+                break;
+            case 'SHIFT': isShift = true; break;
+            case 'HOME': openMenu(); break;
+            case 'Ans': addToken('Ans', active); break;
+            case 'frac': if(!active) tokens.push({type:'frac', num:[], den:[], focus:'num', isMixed: false}); break;
+            case 'pow':
+                if(!active) {
+                    let b = tokens.length > 0 ? [tokens.pop()] : [{type:'text', val:'Ans'}];
+                    tokens.push({type:'pow', base:b, exp:[], focus:'exp', isSci: false});
+                } break;
+            case 'exp':
+                if(!active) {
+                    tokens.push({type:'pow', base:[], exp:[], focus:'exp', isSci: true});
+                } break;
+            case 'sqrt': addToken('√(', active); break;
+            case 'sq': addToken('²', active); break;
+            case 'UP': 
+                if(active?.focus === 'den') active.focus = 'num'; 
+                else if(active?.type === 'nthroot' && active.focus === 'cnt') active.focus = 'idx';
+                else if(!active) {
+                    if (history.length > 0 && historyIndex < history.length - 1) {
+                        historyIndex++;
+                        let h = history[history.length - 1 - historyIndex];
+                        tokens = cloneTokens(h.tokens);
+                        renderResult(h.result);
+                    }
+                }
+                break;
+            case 'DOWN': 
+                if(active?.focus === 'num') active.focus = 'den'; 
+                else if(active?.type === 'nthroot' && active.focus === 'idx') active.focus = 'cnt';
+                else if(!active) {
+                    if (historyIndex > 0) {
+                        historyIndex--;
+                        let h = history[history.length - 1 - historyIndex];
+                        tokens = cloneTokens(h.tokens);
+                        renderResult(h.result);
+                    } else if (historyIndex === 0) {
+                        historyIndex = -1;
+                        tokens = [];
+                        outputArea.innerHTML = '';
+                    }
+                }
+                break;
+            case 'RIGHT':
+                if(active) {
+                    if(active.type === 'frac') {
+                        if(active.focus === 'whole') active.focus = 'num';
+                        else if(active.focus === 'num') active.focus = 'den';
+                        else active.focus = 'none';
+                    } else if(active.type === 'nthroot') {
+                        if(active.focus === 'idx') active.focus = 'cnt';
+                        else active.focus = 'none';
+                    } else active.focus = 'none';
+                } break;
+            case 'EXE': calculate(); break;
+            case 'FORMAT': showExactMode = !showExactMode; if(lastAnsNum !== null) renderResult(lastAnsNum); break;
+            case 'DEL': deleteLast(active); break;
+            case 'sin': addToken('sin(', active); break;
+            case 'cos': addToken('cos(', active); break;
+            case 'tan': addToken('tan(', active); break;
+            case 'log': addToken('log(', active); break;
+            case '(': case ')': addToken(key, active); break;
+            case '.': addToken('.', active); break;
+            case 'x': addToken('x', active); break;
+            case '7': addToken('7', active); break;
+            default:
+                if(!isNaN(key) || ['+','-','*','/'].includes(key)) addToken(key.replace('*','×').replace('/','÷'), active);
+        }
+        render();
+    }
+
+    function handleShift(key, active) {
+        switch(key) {
+            case 'frac': if(!active) tokens.push({type:'frac', whole:[], num:[], den:[], focus:'whole', isMixed: true}); break;
+            case 'pow': if(!active) tokens.push({type:'nthroot', idx:[], cnt:[], focus:'idx'}); break;
+            case 'sqrt': addToken('³√(', active); break;
+            case 'sq': addToken('³', active); break;
+            case ')': addToken(';', active); break;
+            case '7': addToken('π', active); break;
+            case '-': addToken('-', active); break;
+            case '+': addToken('°', active); break; 
+        }
+    }
+
+    function addToken(val, active) {
+        const t = { type: 'text', val: val };
+        if(active) {
+            if(active.type === 'pow') active.exp.push(t);
+            else if(active.type === 'frac') {
+                if(active.focus === 'whole') active.whole.push(t);
+                else if(active.focus === 'num') active.num.push(t);
+                else active.den.push(t);
+            } else if(active.type === 'nthroot') {
+                if(active.focus === 'idx') active.idx.push(t);
+                else active.cnt.push(t);
+            }
+        } else tokens.push(t);
+        historyIndex = -1;
+    }
+
+    function deleteLast(active) {
+        if(active) {
+            if(active.type === 'pow') active.exp.length ? active.exp.pop() : active.focus = 'none';
+            else if(active.type === 'frac') {
+                let list = active.focus==='whole'?active.whole:(active.focus==='num'?active.num:active.den);
+                list.length ? list.pop() : active.focus = 'none';
+            } else if(active.type === 'nthroot') {
+                let list = active.focus==='idx'?active.idx:active.cnt;
+                list.length ? list.pop() : active.focus = 'none';
+            }
+        } else tokens.pop();
+        historyIndex = -1;
+    }
+
+    function calculate() {
+        if (tokens.length === 0) return;
+        try {
+            const evalList = (list) => {
+                let resultStrings = [];
+                for(let i=0; i < list.length; i++){
+                    let t = list[i];
+                    if(t.type === 'text') {
+                        let v = t.val.replace(/×/g,'*').replace(/÷/g,'/').replace(/sin\(/g,'calcSin(').replace(/cos\(/g,'calcCos(').replace(/tan\(/g,'calcTan(').replace(/√\(/g,'Math.sqrt(').replace(/²/g,'**2').replace(/³/g,'**3').replace(/π/g,'Math.PI').replace(/;/g, ',').replace(/°/g, '');
+                        if ((v === "Math.PI" || v === "lastAnsNum" || t.val === "Ans") && i > 0) {
+                            let prev = list[i-1];
+                            if (prev.type === 'text' && !isNaN(prev.val)) resultStrings.push('*');
+                        }
+                        resultStrings.push(t.val === "Ans" ? lastAnsNum : v);
+                    } else if(t.type === 'pow') {
+                        if (t.isSci) resultStrings.push(`* Math.pow(10, ${evalList(t.exp) || "0"})`);
+                        else resultStrings.push(`Math.pow(${evalList(t.base) || "1"}, ${evalList(t.exp) || "0"})`);
+                    } else if(t.type === 'frac') {
+                        let n = evalList(t.num) || "0";
+                        let d = evalList(t.den) || "1";
+                        let f = `(${n} / ${d})`;
+                        resultStrings.push(t.isMixed ? `(${evalList(t.whole) || "0"} + ${f})` : f);
+                    } else if(t.type === 'nthroot') {
+                        resultStrings.push(`Math.pow(${evalList(t.cnt) || "0"}, 1/(${evalList(t.idx) || "1"}))`);
+                    }
+                }
+                return resultStrings.join('') || "0";
+            };
+
+            const toRad = (val) => {
+                if(angleUnit === 'DEG') return val * (Math.PI / 180);
+                if(angleUnit === 'GRAD') return val * (Math.PI / 200);
+                return val;
+            };
+            window.calcSin = (x) => Math.sin(toRad(x));
+            window.calcCos = (x) => Math.cos(toRad(x));
+            window.calcTan = (x) => Math.tan(toRad(x));
+
+            let code = evalList(tokens);
+            if (code.startsWith('*')) code = '1' + code;
+            if(!code || /^[\+\-\*\/\s,]+$/.test(code)) code = "0";
+            let res = eval(code);
+            
+            history.push({ tokens: cloneTokens(tokens), result: res });
+            if (history.length > 10) history.shift(); 
+            
+            lastAnsNum = res;
+            isResultShowing = true;
+            historyIndex = -1; 
+            showExactMode = true;
+            renderResult(res);
+        } catch(e) { 
+            renderResult("Fout"); 
+            lastAnsNum = null; 
+            isResultShowing = true;
+        }
+    }
+
+    render();
+</script>
+</body>
+</html>
