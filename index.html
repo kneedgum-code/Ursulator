@@ -65,7 +65,6 @@
             overflow: hidden;
         }
 
-        /* Menu Overlay */
         .menu-overlay {
             position: absolute;
             top: 0;
@@ -92,7 +91,6 @@
             flex-wrap: wrap;
         }
 
-        /* Math Elements */
         .frac-container { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; padding: 0 4px; }
         .frac-line { width: 100%; height: 2px; background: var(--lcd-text); margin: 1px 0; }
         .frac-part { min-width: 14px; text-align: center; font-size: 18px; }
@@ -270,10 +268,10 @@
             <div class="mt-auto result-area" id="output-area"></div>
             
             <div id="menu-overlay" class="menu-overlay">
-                <div class="menu-title">ANGLE UNIT</div>
-                <div class="menu-item" id="mi-deg" onclick="setAngleUnit('DEG')">1: Degree</div>
-                <div class="menu-item" id="mi-rad" onclick="setAngleUnit('RAD')">2: Radian</div>
-                <div class="menu-item" id="mi-grad" onclick="setAngleUnit('GRAD')">3: Gradian</div>
+                <div class="menu-title">HOEKEENHEID</div>
+                <div class="menu-item" id="mi-deg" onclick="setAngleUnit('DEG')">1: Graden (Degree)</div>
+                <div class="menu-item" id="mi-rad" onclick="setAngleUnit('RAD')">2: Radialen (Radian)</div>
+                <div class="menu-item" id="mi-grad" onclick="setAngleUnit('GRAD')">3: Gradiënten (Gradian)</div>
                 <div class="text-[9px] mt-auto text-center opacity-70">Druk op een pijl of cijfer</div>
             </div>
         </div>
@@ -397,7 +395,7 @@
     let tokens = [];
     let isShift = false;
     let lastAnsNum = 0;
-    let showExactMode = true;
+    let showExactMode = true; // Standaard exacte modus aan
     let isResultShowing = false;
     let isMenuOpen = false;
     let angleUnit = 'DEG';
@@ -465,7 +463,10 @@
         outputArea.innerHTML = '';
         if (value === null || typeof value === 'undefined') return;
         if (typeof value === 'string') { outputArea.innerText = value; return; }
+        
         const frac = toFraction(value);
+        
+        // Als we in Exacte modus zijn en er is een breuk (d != 1)
         if (showExactMode && frac && frac.d !== 1) {
             const c = document.createElement('div'); c.className = 'frac-container';
             const n = document.createElement('div'); n.className = 'frac-part'; n.innerText = frac.n;
@@ -474,6 +475,7 @@
             c.appendChild(n); c.appendChild(l); c.appendChild(d);
             outputArea.appendChild(c);
         } else {
+            // Decimale weergave
             const span = document.createElement('span');
             span.className = 'text-3xl font-bold';
             let displayVal = Number.isInteger(value) ? value.toString() : value.toFixed(9).replace(/\.?0+$/, "");
@@ -568,11 +570,13 @@
 
         const active = getActive(tokens);
 
-        if (isResultShowing && !isShift) {
+        // NIEUW: Als er een resultaat staat en we drukken op een nieuwe knop (behalve SHIFT of FORMAT of EXE)
+        // Dan wissen we de regel voor een schone start.
+        if (isResultShowing && !isShift && key !== 'FORMAT' && key !== 'EXE') {
             if (['+', '-', '*', '/', 'pow', 'sq', 'exp'].includes(key)) {
                 tokens = [{ type: 'text', val: 'Ans' }];
                 outputArea.innerHTML = '';
-            } else if (!['SHIFT', 'FORMAT', 'EXE', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'HOME'].includes(key)) {
+            } else if (!['UP', 'DOWN', 'LEFT', 'RIGHT', 'HOME'].includes(key)) {
                 tokens = [];
                 outputArea.innerHTML = '';
             }
@@ -644,7 +648,11 @@
                     } else active.focus = 'none';
                 } break;
             case 'EXE': calculate(); break;
-            case 'FORMAT': showExactMode = !showExactMode; if(lastAnsNum !== null) renderResult(lastAnsNum); break;
+            case 'FORMAT': 
+                // Wisselt tussen exact en decimaal
+                showExactMode = !showExactMode; 
+                if(isResultShowing || lastAnsNum !== null) renderResult(lastAnsNum); 
+                break;
             case 'DEL': deleteLast(active); break;
             case 'sin': addToken('sin(', active); break;
             case 'cos': addToken('cos(', active); break;
@@ -654,8 +662,20 @@
             case '.': addToken('.', active); break;
             case 'x': addToken('x', active); break;
             case '7': addToken('7', active); break;
-            default:
-                if(!isNaN(key) || ['+','-','*','/'].includes(key)) addToken(key.replace('*','×').replace('/','÷'), active);
+            case '8': addToken('8', active); break;
+            case '9': addToken('9', active); break;
+            case '4': addToken('4', active); break;
+            case '5': addToken('5', active); break;
+            case '6': addToken('6', active); break;
+            case '1': addToken('1', active); break;
+            case '2': addToken('2', active); break;
+            case '3': addToken('3', active); break;
+            case '0': addToken('0', active); break;
+            case '+': addToken('+', active); break;
+            case '-': addToken('-', active); break;
+            case '*': addToken('×', active); break;
+            case '/': addToken('÷', active); break;
+            default: break;
         }
         render();
     }
@@ -688,121 +708,93 @@
                 if(active.focus === 'idx') active.idx.push(t);
                 else active.cnt.push(t);
             }
-        } else tokens.push(t);
-        historyIndex = -1;
+        } else {
+            tokens.push(t);
+        }
     }
 
     function deleteLast(active) {
         if(active) {
-            if(active.type === 'pow') active.exp.length ? active.exp.pop() : active.focus = 'none';
+            let list = [];
+            if(active.type === 'pow') list = active.exp;
             else if(active.type === 'frac') {
-                let list = active.focus==='whole'?active.whole:(active.focus==='num'?active.num:active.den);
-                list.length ? list.pop() : active.focus = 'none';
+                if(active.focus === 'whole') list = active.whole;
+                else if(active.focus === 'num') list = active.num;
+                else list = active.den;
             } else if(active.type === 'nthroot') {
-                let list = active.focus==='idx'?active.idx:active.cnt;
-                list.length ? list.pop() : active.focus = 'none';
+                if(active.focus === 'idx') list = active.idx;
+                else list = active.cnt;
             }
-        } else tokens.pop();
-        historyIndex = -1;
+            if(list.length > 0) list.pop();
+            else { active.focus = 'none'; }
+        } else if(tokens.length > 0) tokens.pop();
     }
 
     function calculate() {
-        if (tokens.length === 0) return;
+        if(tokens.length === 0) return;
         try {
-            const evalList = (list) => {
-                let resultStrings = [];
-                for(let i=0; i < list.length; i++){
-                    let t = list[i];
-                    if(t.type === 'text') {
-                        let v = t.val;
-                        
-                        // Impliciete vermenigvuldiging detectie
-                        if (i > 0) {
-                            let prev = list[i-1];
-                            let prevVal = prev.type === 'text' ? prev.val : '';
-                            if (
-                                (v.startsWith('sin') || v.startsWith('cos') || v.startsWith('tan') || v.startsWith('log') || v.startsWith('√') || v === 'π' || v === 'Ans' || v === '(') &&
-                                (prev.type !== 'text' || (!isNaN(prevVal) || prevVal === ')' || prevVal === 'π' || prevVal === 'Ans' || prevVal === '²' || prevVal === '³'))
-                            ) {
-                                resultStrings.push('*');
-                            }
-                        }
-
-                        // Belangrijk: sin⁻¹ eerst vervangen vòòr sin om over-replacing te voorkomen
-                        // We vervangen eerst naar de aangepaste interne functies.
-                        v = v.replace(/sin⁻¹\(/g, 'calcAsin(')
-                             .replace(/cos⁻¹\(/g, 'calcAcos(')
-                             .replace(/tan⁻¹\(/g, 'calcAtan(')
-                             .replace(/sin\(/g,'calcSin(')
-                             .replace(/cos\(/g,'calcCos(')
-                             .replace(/tan\(/g,'calcTan(')
-                             .replace(/×/g,'*').replace(/÷/g,'/')
-                             .replace(/√\(/g,'Math.sqrt(')
-                             .replace(/²/g,'**2').replace(/³/g,'**3')
-                             .replace(/π/g,'Math.PI')
-                             .replace(/°/g, '');
-                        
-                        resultStrings.push(t.val === "Ans" ? lastAnsNum : v);
-                    } else if(t.type === 'pow') {
-                        if (t.isSci) resultStrings.push(`* Math.pow(10, ${evalList(t.exp) || "0"})`);
-                        else resultStrings.push(`Math.pow(${evalList(t.base) || "1"}, ${evalList(t.exp) || "0"})`);
-                    } else if(t.type === 'frac') {
-                        let n = evalList(t.num) || "0";
-                        let d = evalList(t.den) || "1";
-                        let f = `(${n} / ${d})`;
-                        resultStrings.push(t.isMixed ? `(${evalList(t.whole) || "0"} + ${f})` : f);
-                    } else if(t.type === 'nthroot') {
-                        resultStrings.push(`Math.pow(${evalList(t.cnt) || "0"}, 1/(${evalList(t.idx) || "1"}))`);
-                    }
-                }
-                return resultStrings.join('') || "0";
-            };
-
-            const toRad = (val) => {
-                if(angleUnit === 'DEG') return val * (Math.PI / 180);
-                if(angleUnit === 'GRAD') return val * (Math.PI / 200);
-                return val;
-            };
-            const fromRad = (rad) => {
-                if(angleUnit === 'DEG') return rad * (180 / Math.PI);
-                if(angleUnit === 'GRAD') return rad * (200 / Math.PI);
-                return rad;
-            };
-
-            // Globale wrappers voor goniometrie
-            window.calcSin = (x) => Math.sin(toRad(x));
-            window.calcCos = (x) => Math.cos(toRad(x));
-            window.calcTan = (x) => Math.tan(toRad(x));
+            let mathStr = tokensToMath(tokens);
+            // Vervang impliciete vermenigvuldiging (e.g., 2(3) of (2)(3))
+            mathStr = mathStr.replace(/(\d|\))(\()/g, '$1*$2');
+            let result = eval(mathStr);
+            lastAnsNum = result;
             
-            // Inverse functies: berekenen in radialen en direct converteren naar gekozen eenheid (DEG/RAD/GRAD)
-            window.calcAsin = (x) => fromRad(Math.asin(x));
-            window.calcAcos = (x) => fromRad(Math.acos(x));
-            window.calcAtan = (x) => fromRad(Math.atan(x));
-
-            let code = evalList(tokens);
-            // Vervang de ; door / zodat sin⁻¹(50;120) werkt als sin⁻¹(50/120)
-            code = code.replace(/;/g, '/');
+            // Altijd eerst de exacte modus tonen na EXE
+            showExactMode = true; 
+            renderResult(result);
             
-            if (code.trim().startsWith('*') || code.trim().startsWith('/')) code = '1' + code;
-            if(!code || /^[\+\-\*\/\s,]+$/.test(code)) code = "0";
-            
-            let res = eval(code);
-            
-            history.push({ tokens: cloneTokens(tokens), result: res });
-            if (history.length > 10) history.shift(); 
-            
-            lastAnsNum = res;
+            history.push({ tokens: cloneTokens(tokens), result: result });
+            historyIndex = -1;
             isResultShowing = true;
-            historyIndex = -1; 
-            showExactMode = true;
-            renderResult(res);
-        } catch(e) { 
-            console.error("Berekeningsfout:", e);
-            renderResult("Fout"); 
-            lastAnsNum = null; 
-            isResultShowing = true;
+        } catch(e) {
+            outputArea.innerText = "Syntax Fout";
+            console.error(e);
         }
     }
+
+    function tokensToMath(list) {
+        let s = "";
+        list.forEach(t => {
+            if(t.type === 'text') {
+                let v = t.val;
+                v = v.replace(/×/g,'*').replace(/÷/g,'/').replace('Ans', lastAnsNum).replace('π', 'Math.PI');
+                v = v.replace('sin⁻¹(', 'asin_deg(').replace('cos⁻¹(', 'acos_deg(').replace('tan⁻¹(', 'atan_deg(');
+                v = v.replace('sin(', 'sin_deg(').replace('cos(', 'cos_deg(').replace('tan(', 'tan_deg(');
+                v = v.replace('√(', 'Math.sqrt(').replace('³√(', 'Math.cbrt(').replace('²', '**2').replace('³', '**3');
+                v = v.replace('log(', 'Math.log10(');
+                s += v;
+            } else if(t.type === 'pow') {
+                let base = t.isSci ? "10" : tokensToMath(t.base);
+                let operator = t.isSci ? "*" : "";
+                s += operator + "(" + base + ")**(" + tokensToMath(t.exp) + ")";
+            } else if(t.type === 'frac') {
+                let whole = t.isMixed ? "(" + tokensToMath(t.whole) + "+ " : "";
+                s += whole + "(" + tokensToMath(t.num) + ")/(" + tokensToMath(t.den) + ")" + (t.isMixed ? ")" : "");
+            } else if(t.type === 'nthroot') {
+                s += "Math.pow(" + tokensToMath(t.cnt) + ", 1/(" + tokensToMath(t.idx) + "))";
+            }
+        });
+        return s;
+    }
+
+    // Trigonometrische Helpers
+    function toRad(val) {
+        if(angleUnit === 'RAD') return val;
+        if(angleUnit === 'GRAD') return val * (Math.PI / 200);
+        return val * (Math.PI / 180);
+    }
+    function fromRad(val) {
+        if(angleUnit === 'RAD') return val;
+        if(angleUnit === 'GRAD') return val * (200 / Math.PI);
+        return val * (180 / Math.PI);
+    }
+
+    window.sin_deg = (x) => Math.sin(toRad(x));
+    window.cos_deg = (x) => Math.cos(toRad(x));
+    window.tan_deg = (x) => Math.tan(toRad(x));
+    window.asin_deg = (x) => fromRad(Math.asin(x));
+    window.acos_deg = (x) => fromRad(Math.acos(x));
+    window.atan_deg = (x) => fromRad(Math.atan(x));
 
     render();
 </script>
